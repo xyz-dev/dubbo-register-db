@@ -34,6 +34,12 @@
         <dubbo:method name="unsubscribe"><dubbo:argument index="1" callback="false" /></dubbo:method>
     </dubbo:service>
     
-    <bean id="registryService" class="com.lufax.dubbo.registry.db.SimpleDBRegistryService" />
+    <bean id="registryService" class="com.lufax.dubbo.registry.db.SimpleDBRegistryService" >
+    	<property name="dataSource" ref="dataSource" />
+    </bean>
+    
+    <bean id="dataSource" class="org.h2.jdbcx.JdbcDataSource" >
+    	<property name="URL"><value>jdbc:h2:${registry.dbfile}</value></property>
+    </bean>
 
 </beans>
