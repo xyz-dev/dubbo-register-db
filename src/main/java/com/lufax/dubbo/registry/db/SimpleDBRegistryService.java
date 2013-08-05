@@ -47,10 +47,14 @@ public class SimpleDBRegistryService extends FailbackRegistry {
 
 	private final ConcurrentMap<String, ConcurrentMap<URL, Set<NotifyListener>>> remoteSubscribed = new ConcurrentHashMap<String, ConcurrentMap<URL, Set<NotifyListener>>>();
 
-	private final static Logger logger = LoggerFactory.getLogger(SimpleDBRegistryService.class);
+	private final static Logger logger = LoggerFactory
+			.getLogger(SimpleDBRegistryService.class);
+
+	private RegistryStore store;
 
 	public SimpleDBRegistryService() {
-		super(new URL("dubbo", NetUtils.getLocalHost(), 0, RegistryService.class.getName(), "file", "N/A"));
+		super(new URL("dubbo", NetUtils.getLocalHost(), 0,
+				RegistryService.class.getName(), "file", "N/A"));
 	}
 
 	public boolean isAvailable() {
@@ -75,7 +79,7 @@ public class SimpleDBRegistryService extends FailbackRegistry {
 			urls = remoteRegistered.get(client);
 		}
 		urls.add(url);
-		//super.register(url);
+		// super.register(url);
 		registered(url);
 	}
 
@@ -85,41 +89,48 @@ public class SimpleDBRegistryService extends FailbackRegistry {
 		if (urls != null && urls.size() > 0) {
 			urls.remove(url);
 		}
-		//super.unregister(url);
+		// super.unregister(url);
 		unregistered(url);
 	}
 
 	public void whenSubscribe(URL url, NotifyListener listener) {
 		if (getUrl().getPort() == 0) {
 			URL registryUrl = RpcContext.getContext().getUrl();
-			if (registryUrl != null && registryUrl.getPort() > 0
-					&& RegistryService.class.getName().equals(registryUrl.getPath())) {
+			if (registryUrl != null
+					&& registryUrl.getPort() > 0
+					&& RegistryService.class.getName().equals(
+							registryUrl.getPath())) {
 				super.setUrl(registryUrl);
 				super.register(registryUrl);
 			}
 		}
 		String client = RpcContext.getContext().getRemoteAddressString();
-		ConcurrentMap<URL, Set<NotifyListener>> clientListeners = remoteSubscribed.get(client);
+		ConcurrentMap<URL, Set<NotifyListener>> clientListeners = remoteSubscribed
+				.get(client);
 		if (clientListeners == null) {
-			remoteSubscribed.putIfAbsent(client, new ConcurrentHashMap<URL, Set<NotifyListener>>());
+			remoteSubscribed.putIfAbsent(client,
+					new ConcurrentHashMap<URL, Set<NotifyListener>>());
 			clientListeners = remoteSubscribed.get(client);
 		}
 		Set<NotifyListener> listeners = clientListeners.get(url);
 		if (listeners == null) {
-			clientListeners.putIfAbsent(url, new ConcurrentHashSet<NotifyListener>());
+			clientListeners.putIfAbsent(url,
+					new ConcurrentHashSet<NotifyListener>());
 			listeners = clientListeners.get(url);
 		}
 		listeners.add(listener);
-		//super.subscribe(url, listener);
+		// super.subscribe(url, listener);
 		subscribed(url, listener);
 	}
 
 	public void whenUnsubscribe(URL url, NotifyListener listener) {
-		if (!Constants.ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(Constants.REGISTER_KEY, true)) {
+		if (!Constants.ANY_VALUE.equals(url.getServiceInterface())
+				&& url.getParameter(Constants.REGISTER_KEY, true)) {
 			unregister(url);
 		}
 		String client = RpcContext.getContext().getRemoteAddressString();
-		Map<URL, Set<NotifyListener>> clientListeners = remoteSubscribed.get(client);
+		Map<URL, Set<NotifyListener>> clientListeners = remoteSubscribed
+				.get(client);
 		if (clientListeners != null && clientListeners.size() > 0) {
 			Set<NotifyListener> listeners = clientListeners.get(url);
 			if (listeners != null && listeners.size() > 0) {
@@ -129,7 +140,8 @@ public class SimpleDBRegistryService extends FailbackRegistry {
 	}
 
 	protected void registered(URL url) {
-		for (Map.Entry<URL, Set<NotifyListener>> entry : getSubscribed().entrySet()) {
+		for (Map.Entry<URL, Set<NotifyListener>> entry : getSubscribed()
+				.entrySet()) {
 			URL key = entry.getKey();
 			if (UrlUtils.isMatch(key, url)) {
 				List<URL> list = lookup(key);
@@ -141,7 +153,8 @@ public class SimpleDBRegistryService extends FailbackRegistry {
 	}
 
 	protected void unregistered(URL url) {
-		for (Map.Entry<URL, Set<NotifyListener>> entry : getSubscribed().entrySet()) {
+		for (Map.Entry<URL, Set<NotifyListener>> entry : getSubscribed()
+				.entrySet()) {
 			URL key = entry.getKey();
 			if (UrlUtils.isMatch(key, url)) {
 				List<URL> list = lookup(key);
@@ -172,7 +185,9 @@ public class SimpleDBRegistryService extends FailbackRegistry {
 						try {
 							listener.notify(list);
 						} catch (Throwable e) {
-							logger.warn("Discard to notify " + url.getServiceKey() + " to listener " + listener);
+							logger.warn("Discard to notify "
+									+ url.getServiceKey() + " to listener "
+									+ listener);
 						}
 					}
 				}
@@ -182,7 +197,8 @@ public class SimpleDBRegistryService extends FailbackRegistry {
 			try {
 				listener.notify(list);
 			} catch (Throwable e) {
-				logger.warn("Discard to notify " + url.getServiceKey() + " to listener " + listener);
+				logger.warn("Discard to notify " + url.getServiceKey()
+						+ " to listener " + listener);
 			}
 		}
 	}
@@ -200,7 +216,8 @@ public class SimpleDBRegistryService extends FailbackRegistry {
 		}
 		Map<URL, Set<NotifyListener>> listeners = remoteSubscribed.get(client);
 		if (listeners != null && listeners.size() > 0) {
-			for (Map.Entry<URL, Set<NotifyListener>> entry : listeners.entrySet()) {
+			for (Map.Entry<URL, Set<NotifyListener>> entry : listeners
+					.entrySet()) {
 				URL url = entry.getKey();
 				for (NotifyListener listener : entry.getValue()) {
 					unsubscribe(url, listener);
@@ -209,25 +226,41 @@ public class SimpleDBRegistryService extends FailbackRegistry {
 		}
 	}
 
-	//
-    protected void doRegister(URL url) {
-		//logger.info("doRegister "+url);
-    		whenRegister(url);
-    }
-
-    protected void doUnregister(URL url) {
-		//logger.info("doUnregister "+url);
-    		whenUnregister(url);
-    }
-
-    protected void doSubscribe(URL url, NotifyListener listener) {
-		//logger.info("doSubscribe "+url);
-    		whenSubscribe(url, listener);
-    }
-
-    protected void doUnsubscribe(URL url, NotifyListener listener) {
-		//logger.info("doUnsubscribe "+url);
-    		whenUnsubscribe(url, listener);
-    }
+	private final ConcurrentMap<URL, Long> storedURLs = new ConcurrentHashMap<URL, Long>();
 	
+	//
+	protected void doRegister(URL url) {
+		// logger.info("doRegister "+url);
+		Long id = store.add(url);
+		storedURLs.put(url, id);
+		whenRegister(url);
+	}
+
+	protected void doUnregister(URL url) {
+		// logger.info("doUnregister "+url);
+		Long id = storedURLs.remove(url);
+		if (id != null) {
+			store.remove(id);
+		}		
+		whenUnregister(url);
+	}
+
+	protected void doSubscribe(URL url, NotifyListener listener) {
+		// logger.info("doSubscribe "+url);
+		whenSubscribe(url, listener);
+	}
+
+	protected void doUnsubscribe(URL url, NotifyListener listener) {
+		// logger.info("doUnsubscribe "+url);
+		whenUnsubscribe(url, listener);
+	}
+
+	public RegistryStore getStore() {
+		return store;
+	}
+
+	public void setStore(RegistryStore store) {
+		this.store = store;
+	}
+
 }
