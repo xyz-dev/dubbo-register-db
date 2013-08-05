@@ -30,6 +30,7 @@ public class RegistryDBStore implements RegistryStore {
 		long id = nextId();
 		Map<String, Object> params = paramMap(url);
 		params.put("id", id);
+		params.put("status", "1");
 		jdbc.update(INSERT_SQL, params);
 		return id;
 	}
@@ -37,6 +38,7 @@ public class RegistryDBStore implements RegistryStore {
 	public void remove(Long id) {
 		Map<String, Object> params = new HashMap<String, Object>();
 		params.put("id", id);
+		params.put("status", "0");
 		jdbc.update(REMOVE_SQL, params);
 	}
 
@@ -81,6 +83,8 @@ public class RegistryDBStore implements RegistryStore {
 					new HashMap<String, String>(1));
 			this.last = new AtomicLong(max + 1);
 		} catch (DataAccessException ex) {
+			jdbc.getJdbcOperations().execute(CREATE_SQL);
+			/*
 			jdbc.execute(CREATE_SQL, new HashMap<String, String>(1),
 					new PreparedStatementCallback() {
 						public Object doInPreparedStatement(
@@ -90,6 +94,7 @@ public class RegistryDBStore implements RegistryStore {
 						}
 
 					});
+			*/
 			this.last = new AtomicLong(1);
 		}
 	}
@@ -123,11 +128,11 @@ public class RegistryDBStore implements RegistryStore {
 	private static final String REMOVE_SQL = "UPDATE " + TABLE
 			+ " SET status=:status WHERE id=:id";
 
-	private static final String INSERT_SQL = "INSERT " + TABLE + " ("
+	private static final String INSERT_SQL = "INSERT INTO " + TABLE + " ("
 			+ columns(false) + ") " + "VALUES (" + columns(true) + ")";
 
 	private static final String CREATE_SQL = "create table " + TABLE + " ("
-			+ "" + "" + "id number(15,0) primary key,"
+			+ "id number(15,0) primary key,"
 			+ "status varchar(1) not null," + "url varchar(2000) not null,"
 			+ "host varchar(60) not null," + "port varchar(8) not null,"
 			+ "protocol varchar(32),"
@@ -143,7 +148,7 @@ public class RegistryDBStore implements RegistryStore {
 
 	private Map<String, Object> paramMap(URL url) {
 		HashMap<String, Object> rs = new HashMap<String, Object>();
-		rs.put("status", "1");
+		// rs.put("status", "1");
 
 		rs.put("url", url.toFullString());
 		rs.put("protocol", url.getProtocol());
